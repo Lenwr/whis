@@ -10,17 +10,16 @@ export default function AuthView() {
 
   const [isSignUp, setIsSignUp] = useState(true);
   const [displayName, setDisplayName] = useState("");
-  const [anime, setAnime] = useState(""); // ✅ Nouvel état : Anime choisi
-  const [classe, setClasse] = useState(""); // ✅ Classe choisie
+  const [anime, setAnime] = useState("");
+  const [classe, setClasse] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState("");
 
-  // Anime → Classes
   const animeClasses: Record<string, string[]> = {
-    "Naruto": ["Ninja de Konoha", "Ninja de Suna", "Ninja de Kiri"],
-    "Bleach": ["Shinigami", "Quincy", "Arrancar"],
-    "Dragon Ball": ["Saiyan", "Terrien", "Namek"],
+    Naruto: ["Ninja de Konoha", "Ninja de Suna", "Ninja de Kiri"],
+    Bleach: ["Shinigami", "Quincy", "Arrancar"],
+    DragonBall: ["Saiyan", "Terrien", "Namek"],
   };
 
   useEffect(() => {
@@ -55,10 +54,17 @@ export default function AuthView() {
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-sky-300 p-4 to-white">
       <MangaBackground />
 
+      <img
+        src="/whis.svg"
+        alt="Whis Sensei"
+        className="absolute top-10 right-10 w-[50%] opacity-70 drop-shadow-xl
+                   sm:top-6 sm:right-6 sm:w-[20%] sm:opacity-50"
+      />
+
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-800/50 to-black"></div>
 
       <motion.div
-        className="relative z-10 backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-8 w-full max-w-md shadow-2xl"
+        className="relative z-10 backdrop-blur-md bg-white/10 border border-white/20 rounded-xl p-8 w-full max-w-md shadow-2xl mt-30 sm:mt-20"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.7 }}
@@ -87,13 +93,12 @@ export default function AuthView() {
               }}
             />
 
-            {/* ✅ Choix Anime */}
             <select
               className="w-full mb-4 p-3 rounded bg-white/20 text-white placeholder-white/70 focus:outline-none"
               value={anime}
               onChange={(e) => {
                 setAnime(e.target.value);
-                setClasse(""); // Réinitialise la classe si on change d’anime
+                setClasse("");
                 clearError();
                 setLocalError("");
               }}
@@ -106,7 +111,6 @@ export default function AuthView() {
               ))}
             </select>
 
-            {/* ✅ Choix Classe */}
             {anime && (
               <select
                 className="w-full mb-4 p-3 rounded bg-white/20 text-white placeholder-white/70 focus:outline-none"

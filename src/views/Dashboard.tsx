@@ -1,35 +1,66 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase/config";
 import { signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase/config";
 
-interface DashboardProps {
-  displayName?: string;
-  level?: number; // facultatif, par défaut 0
-  xp?: number; // facultatif, par défaut 0
-  xpMax?: number; // facultatif, par défaut 100
-  classe?: string; // nouvelle propriété => choisie à l'inscription
+interface UserData {
+  uid: string;
+  displayName: string;
+  anime?: string;
+  classe: string;
+  xpTotal: number;
+  level: number;
+  createdAt: number;
 }
 
-export default function Dashboard({
-  displayName,
-  level = 0,
-  xp = 0,
-  xpMax = 100,
-  classe = "Shinigami", // exemple par défaut
-}: DashboardProps) {
+export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    navigate("/login");
-  };
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const xpPercent = Math.min(100, (xp / xpMax) * 100);
+  useEffect(() => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
-  // Exemple mapping Bleach : Shinigami
+    const fetchUserData = async () => {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const data = userSnap.data() as UserData;
+          setUserData(data);
+        } else {
+          setUserData(null);
+        }
+      } catch (error) {
+        console.error("Erreur récupération données utilisateur :", error);
+        setUserData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
+
+  if (loading) return <p className="text-center mt-10">Chargement...</p>;
+
+  if (!userData) return <p className="text-center mt-10">Utilisateur non trouvé.</p>;
+
+  const { displayName, classe, xpTotal, level } = userData;
+
+  // Calcul dynamique du XP max selon le niveau
+  const xpMax = 100 + level * 50;
+  const xpPercent = Math.min(100, (xpTotal / xpMax) * 100);
+
   const getRank = (level: number, classe: string): string => {
     if (classe === "Shinigami") {
       if (level < 5) return "Étudiant de l'Académie";
@@ -47,12 +78,17 @@ export default function Dashboard({
 
   const rank = getRank(level, classe);
 
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate("/login");
+  };
+
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-blue-300 via-cyan-200 to-blue-500 overflow-hidden text-gray-900 font-sans">
       {/* Salle du Temps background */}
       <div
         className="absolute inset-0 bg-center bg-no-repeat bg-cover opacity-70"
-        style={{ backgroundImage: "url('/SDT.jpeg')" }}
+        // tu peux ajouter un background-image ici si tu veux
       />
 
       {/* Overlay */}
@@ -60,12 +96,12 @@ export default function Dashboard({
 
       <div className="relative z-10 max-w-6xl mx-auto p-6 flex flex-col items-center space-y-8">
         {/* Bienvenue */}
-        <div className="bg-cyan-100 bg-opacity-80 border border-cyan-300 rounded-xl px-6 py-3 drop-shadow-md text-center max-w-md w-full">
-          <h1 className="text-2xl font-extrabold tracking-wide text-cyan-700 drop-shadow-sm">
-            Bienvenue dans la Salle du Temps
+        <div className="bg-cyan-100 bg-opacity-80 border border-cyan-300 rounded-xl items-center px-3 py-3 drop-shadow-md text-center max-w-md w-full flex flex-row justify-center ">
+          <h1 className=" text-xl font-semibold tracking-wide text-cyan-700 mr-2 drop-shadow-sm">
+            Bienvenue
           </h1>
-          <p className="mt-1 text-xl font-semibold text-cyan-800">
-            {displayName || user?.displayName || "Guerrier"}
+          <p className=" text-2xl font-extrabold  text-cyan-800">
+            {displayName || "Guerrier"}
           </p>
         </div>
 
@@ -77,13 +113,13 @@ export default function Dashboard({
         <div className="bg-white/40 backdrop-blur-md rounded-xl p-8 w-full max-w-3xl shadow-lg border border-cyan-300">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 text-cyan-900">
             <div className="text-center md:text-left">
-              <p className="text-lg font-semibold">Classe</p>
-              <p className="text-3xl font-bold">{classe}</p>
+              <p className="text-lg font-semibold">Classe actuelle</p>
+              <p className="text-2xl font-bold">{classe}</p>
             </div>
 
             <div className="text-center md:text-left">
-              <p className="text-lg font-semibold">Rang</p>
-              <p className="text-3xl font-bold">{rank}</p>
+              <p className="text-lg font-semibold">Rang actuel</p>
+              <p className="text-2xl font-bold">{rank}</p>
             </div>
 
             <div className="w-full md:w-2/5">
@@ -95,7 +131,7 @@ export default function Dashboard({
                 />
               </div>
               <p className="text-sm mt-1 text-cyan-700 text-right font-medium">
-                {xp} / {xpMax}
+                {xpTotal} / {xpMax}
               </p>
             </div>
           </div>
@@ -105,10 +141,7 @@ export default function Dashboard({
         <div className="bg-white/50 backdrop-blur-md rounded-xl p-6 max-w-3xl w-full flex flex-col md:flex-row md:justify-center md:space-x-6 space-y-4 md:space-y-0 shadow-md border border-cyan-300">
           {[
             { label: "EMOM", icon: "⏳", path: "/emom" },
-            { label: "Séances", icon: "💪", path: "/seances" },
             { label: "Tabata", icon: "🔥", path: "/tabata" },
-            { label: "Vélo", icon: "🚴", path: "/velo" },
-            { label: "Autres", icon: "⚔️", path: "/autres" },
           ].map(({ label, icon, path }) => (
             <button
               key={label}
@@ -118,15 +151,6 @@ export default function Dashboard({
               <span className="text-3xl mr-3">{icon}</span> {label}
             </button>
           ))}
-        </div>
-
-        {/* Logout */}
-        <div
-          onClick={handleLogout}
-          className="flex flex-row items-center justify-center bg-cyan-700 hover:bg-cyan-600 rounded-lg px-4 py-2"
-        >
-          <p className="text-m text-white">Quitter la salle du temps</p>
-          <button className="text-4xl ml-2 text-cyan-700">🚪</button>
         </div>
       </div>
     </div>

@@ -8,13 +8,20 @@ import {
   updateProfile,
   AuthError,
 } from "firebase/auth";
-import { auth } from "../firebase/config";
+import { auth, db } from "../firebase/config";
+import { doc, setDoc } from "firebase/firestore";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  signUp: (email: string, password: string, displayName?: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string,
+    anime: string,
+    classe: string
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
   clearError: () => void;
@@ -36,14 +43,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  const signUp = async (email: string, password: string, displayName?: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    displayName: string,
+    anime: string,
+    classe: string
+  ) => {
     setError(null);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      if (auth.currentUser && displayName) {
-        await updateProfile(auth.currentUser, { displayName });
-        setUser({ ...auth.currentUser });
-      }
+      const newUser = userCredential.user;
+
+      await updateProfile(newUser, {
+        displayName: displayName,
+      });
+
+      await setDoc(doc(db, "users", newUser.uid), {
+        uid: newUser.uid,
+        displayName,
+        anime,
+        classe,
+        xpTotal: 0,
+        level: 1,
+        createdAt: Date.now(),
+      });
+
+      setUser(newUser);
     } catch (err) {
       const authErr = err as AuthError;
       setError(authErr.message);
@@ -77,7 +103,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const clearError = () => setError(null);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, signUp, signIn, logOut, clearError }}>
+    <AuthContext.Provider
+      value={{ user, loading, error, signUp, signIn, logOut, clearError }}
+    >
       {children}
     </AuthContext.Provider>
   );
