@@ -142,7 +142,7 @@ export default function Dashboard() {
           {[
             { label: "EMOM", icon: "⏳", path: "/emom" },
             { label: "Tabata", icon: "🔥", path: "/tabata" },
-          //  { label: "Run", icon: "🏃🏾‍♂️‍➡️", path: "/run" },
+            { label: "Run", icon: "🏃🏾‍♂️‍➡️", path: "/run" },
           ].map(({ label, icon, path }) => (
             <button
               key={label}
