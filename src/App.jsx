@@ -7,6 +7,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { PrivateRoute, PublicRoute } from "./Guards/RouteGuards";
 import Layout from "./layout/DashbordLayout"; // <= Ton Layout avec Header/Footer/Outlet
 import LeaderboardView from "./views/LeaderBoardView";
+import RunSession from "./components/RunSession";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
               <Route path="/emom" element={<EmomView />} />
               <Route path="/tabata" element={<TabataView />} />
               <Route path="/leaderboard" element={<LeaderboardView />} />
+              <Route path="/run" element={<RunSession />} />
             </Route>
           </Route>
 
