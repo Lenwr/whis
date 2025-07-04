@@ -5,7 +5,6 @@ import {
   Polyline,
   Marker,
   Popup,
-  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import { db } from "../firebase/config";
@@ -35,7 +34,6 @@ export default function RunSession() {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
-            console.log("Position initiale:", latitude, longitude);
             setPositions((old) => [...old, [latitude, longitude]]);
           },
           (err) => console.error("Erreur getCurrentPosition:", err),
@@ -45,7 +43,6 @@ export default function RunSession() {
         watchIdRef.current = navigator.geolocation.watchPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
-            console.log("Nouvelle position:", latitude, longitude);
             setPositions((old) => [...old, [latitude, longitude]]);
           },
           (err) => console.error("Erreur watchPosition:", err),
@@ -67,14 +64,12 @@ export default function RunSession() {
     };
   }, [isRunning]);
 
-  // ⏱️ Chrono format
   const formatTime = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
       2,
       "0"
     )}`;
 
-  // 📏 Distance Haversine
   const calcHaversine = (
     [lat1, lon1]: [number, number],
     [lat2, lon2]: [number, number]
@@ -95,6 +90,18 @@ export default function RunSession() {
     return acc + calcHaversine(arr[idx - 1], cur);
   }, 0);
 
+  // ** Nouveaux calculs **
+
+  const stepLengthMeters = 0.75; // longueur moyenne d'un pas en mètres
+  const steps = Math.floor(totalDistance / stepLengthMeters);
+
+  const userWeightKg = 70; // à adapter ou rendre dynamique
+  const met = 8; // MET moyen pour la course
+  const hours = elapsedTime / 3600;
+  const calories = Math.round(met * userWeightKg * hours);
+
+  const avgSpeedKmh = elapsedTime > 0 ? (totalDistance / 1000) / (elapsedTime / 3600) : 0;
+
   const handleSave = async () => {
     if (!user) {
       alert("Tu dois être connecté pour sauvegarder.");
@@ -114,6 +121,9 @@ export default function RunSession() {
           date: Date.now(),
           duration: elapsedTime,
           distance: totalDistance,
+          steps,
+          calories,
+          avgSpeedKmh,
         }),
         xpTotal: xpGained,
       });
@@ -137,7 +147,6 @@ export default function RunSession() {
     iconAnchor: [12, 41],
   });
 
-  // 👉 Auto center à chaque nouvelle position
   useEffect(() => {
     if (mapRef.current && positions.length > 0) {
       const lastPos = positions[positions.length - 1];
@@ -146,38 +155,39 @@ export default function RunSession() {
   }, [positions]);
 
   return (
-    <div className="relative max-w-lg mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Course</h2>
+    <div className="relative flex flex-col w-screen h-screen mx-auto bg-gradient-to-b from-blue-100 via-cyan-200 to-blue-500 overflow-hidden text-gray-900 font-sans">
       
+      <h2 className="text-2xl font-bold my-4 text-center">Course</h2>
 
-      <MapContainer
-        center={center}
-        zoom={16}
-        style={{ height: "300px", width: "100%" }}
-        ref={mapRef as any} // TypeScript : forcer ref
-      >
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+      <div className="w-full flex justify-center items-center">
+        <MapContainer
+          center={center}
+          zoom={18}
+          style={{ height: "500px", width: "90%" }}
+          ref={mapRef as any}
+        >
+          <TileLayer
+            attribution="&copy; OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-        {positions.length > 0 && (
-          <>
-            <Polyline positions={positions} color="blue" />
-            <Marker position={center} icon={icon}>
-              <Popup>Tu es ici</Popup>
-            </Marker>
-          </>
-        )}
-      </MapContainer>
+          {positions.length > 0 && (
+            <>
+              <Polyline positions={positions} color="blue" />
+              <Marker position={center} icon={icon}>
+                <Popup>Tu es ici</Popup>
+              </Marker>
+            </>
+          )}
+        </MapContainer>
+      </div>
 
-     
-
-      <div className="mt-4 text-center">
-        <p className="text-xl mb-2">Temps : {formatTime(elapsedTime)}</p>
-        <p className="text-xl mb-2">
-          Distance : {(totalDistance / 1000).toFixed(2)} km
-        </p>
+      <div className="mt-4 text-center space-y-2">
+        <p className="text-xl">⏱️ Temps : {formatTime(elapsedTime)}</p>
+        <p className="text-xl">📏 Distance : {(totalDistance / 1000).toFixed(2)} km</p>
+        <p className="text-xl">👣 Pas : {steps}</p>
+        <p className="text-xl">🔥 Calories : {calories} kcal</p>
+        <p className="text-xl">🚀 Vitesse Moyenne : {avgSpeedKmh.toFixed(2)} km/h</p>
 
         <button
           onClick={() => setIsRunning((r) => !r)}
@@ -195,17 +205,6 @@ export default function RunSession() {
         >
           Sauvegarder
         </button>
-        <button
-        onClick={() => {
-          if (mapRef.current && positions.length > 0) {
-            const lastPos = positions[positions.length - 1];
-            mapRef.current.flyTo(lastPos, 16);
-          }
-        }}
-        className="mt-2  px-4 py-2 rounded bg-yellow-500 text-white font-bold shadow z-[1000]"
-      >
-        📍 Centrer
-      </button>
       </div>
     </div>
   );
