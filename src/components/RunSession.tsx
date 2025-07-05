@@ -34,7 +34,8 @@ export default function RunSession() {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
-            setPositions((old) => [...old, [latitude, longitude]]);
+            // ✅ Toujours version fonctionnelle
+            setPositions((prev) => [...prev, [latitude, longitude]]);
           },
           (err) => console.error("Erreur getCurrentPosition:", err),
           { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
@@ -43,7 +44,8 @@ export default function RunSession() {
         watchIdRef.current = navigator.geolocation.watchPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
-            setPositions((old) => [...old, [latitude, longitude]]);
+            // ✅ Toujours version fonctionnelle
+            setPositions((prev) => [...prev, [latitude, longitude]]);
           },
           (err) => console.error("Erreur watchPosition:", err),
           { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
@@ -90,17 +92,19 @@ export default function RunSession() {
     return acc + calcHaversine(arr[idx - 1], cur);
   }, 0);
 
-  // ** Nouveaux calculs **
-
-  const stepLengthMeters = 0.75; // longueur moyenne d'un pas en mètres
+  // 👣 Steps
+  const stepLengthMeters = 0.75;
   const steps = Math.floor(totalDistance / stepLengthMeters);
 
-  const userWeightKg = 70; // à adapter ou rendre dynamique
-  const met = 8; // MET moyen pour la course
+  // 🔥 Calories
+  const userWeightKg = 70;
+  const met = 8;
   const hours = elapsedTime / 3600;
   const calories = Math.round(met * userWeightKg * hours);
 
-  const avgSpeedKmh = elapsedTime > 0 ? (totalDistance / 1000) / (elapsedTime / 3600) : 0;
+  // 🚀 Vitesse moyenne
+  const avgSpeedKmh =
+    elapsedTime > 0 ? totalDistance / 1000 / (elapsedTime / 3600) : 0;
 
   const handleSave = async () => {
     if (!user) {
@@ -156,7 +160,6 @@ export default function RunSession() {
 
   return (
     <div className="relative flex flex-col w-screen h-screen mx-auto bg-gradient-to-b from-blue-100 via-cyan-200 to-blue-500 overflow-hidden text-gray-900 font-sans">
-      
       <h2 className="text-2xl font-bold my-4 text-center">Course</h2>
 
       <div className="w-full flex justify-center items-center">
@@ -184,10 +187,14 @@ export default function RunSession() {
 
       <div className="mt-4 text-center space-y-2">
         <p className="text-xl">⏱️ Temps : {formatTime(elapsedTime)}</p>
-        <p className="text-xl">📏 Distance : {(totalDistance / 1000).toFixed(2)} km</p>
+        <p className="text-xl">
+          📏 Distance : {(totalDistance / 1000).toFixed(2)} km
+        </p>
         <p className="text-xl">👣 Pas : {steps}</p>
         <p className="text-xl">🔥 Calories : {calories} kcal</p>
-        <p className="text-xl">🚀 Vitesse Moyenne : {avgSpeedKmh.toFixed(2)} km/h</p>
+        <p className="text-xl">
+          🚀 Vitesse Moyenne : {avgSpeedKmh.toFixed(2)} km/h
+        </p>
 
         <button
           onClick={() => setIsRunning((r) => !r)}
