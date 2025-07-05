@@ -159,60 +159,71 @@ export default function RunSession() {
   }, [positions]);
 
   return (
-    <div className="relative flex flex-col w-screen h-screen mx-auto bg-gradient-to-b from-blue-100 via-cyan-200 to-blue-500 overflow-hidden text-gray-900 font-sans">
-      <h2 className="text-2xl font-bold my-4 text-center">Course</h2>
-
-      <div className="w-full flex justify-center items-center">
-        <MapContainer
-          center={center}
-          zoom={18}
-          style={{ height: "500px", width: "90%" }}
-          ref={mapRef as any}
-        >
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {positions.length > 0 && (
-            <>
-              <Polyline positions={positions} color="blue" />
-              <Marker position={center} icon={icon}>
-                <Popup>Tu es ici</Popup>
-              </Marker>
-            </>
-          )}
-        </MapContainer>
+    <div className="relative w-screen h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white font-sans overflow-x-scroll">
+      <div className="absolute top-4 w-full text-center text-3xl font-bold tracking-wide text-white drop-shadow-md">
+        🏃‍♂️ Session de Course
       </div>
-
-      <div className="mt-4 text-center space-y-2">
-        <p className="text-xl">⏱️ Temps : {formatTime(elapsedTime)}</p>
-        <p className="text-xl">
-          📏 Distance : {(totalDistance / 1000).toFixed(2)} km
-        </p>
-        <p className="text-xl">👣 Pas : {steps}</p>
-        <p className="text-xl">🔥 Calories : {calories} kcal</p>
-        <p className="text-xl">
-          🚀 Vitesse Moyenne : {avgSpeedKmh.toFixed(2)} km/h
-        </p>
-
-        <button
-          onClick={() => setIsRunning((r) => !r)}
-          className={`px-6 py-2 rounded ${
-            isRunning ? "bg-red-500" : "bg-green-500"
-          } text-white font-bold mr-2`}
-        >
-          {isRunning ? "Stop" : "Démarrer"}
-        </button>
-
-        <button
-          onClick={handleSave}
-          disabled={isRunning || positions.length < 2}
-          className="px-6 py-2 rounded bg-blue-600 text-white font-bold"
-        >
-          Sauvegarder
-        </button>
+  
+      <div className="flex flex-col items-center justify-center h-full gap-6 p-4">
+        <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10">
+          <MapContainer
+            center={center}
+            zoom={17}
+            style={{ height: "400px", width: "350px" }}
+            ref={mapRef as any}
+          >
+            <TileLayer
+              attribution="&copy; OpenStreetMap contributors"
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {positions.length > 0 && (
+              <>
+                <Polyline positions={positions} color="cyan" weight={5} />
+                <Marker position={center} icon={icon}>
+                  <Popup>Tu es ici</Popup>
+                </Marker>
+              </>
+            )}
+          </MapContainer>
+        </div>
+  
+        <div className="w-[350px] bg-white/10 backdrop-blur-lg rounded-2xl p-6 space-y-3 shadow-lg">
+          <p className="text-lg font-semibold">⏱️ Temps : {formatTime(elapsedTime)}</p>
+          <p className="text-lg font-semibold">
+            📏 Distance : {(totalDistance / 1000).toFixed(2)} km
+          </p>
+          <p className="text-lg font-semibold">👣 Pas : {steps}</p>
+          <p className="text-lg font-semibold">🔥 Calories : {calories} kcal</p>
+          <p className="text-lg font-semibold">
+            🚀 Vitesse : {avgSpeedKmh.toFixed(1)} km/h
+          </p>
+        </div>
+  
+        <div className="flex gap-4">
+          <button
+            onClick={() => setIsRunning((r) => !r)}
+            className={`px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg transition-all duration-300 ${
+              isRunning
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-green-500 hover:bg-green-600"
+            }`}
+          >
+            {isRunning ? "Stop" : "Démarrer"}
+          </button>
+  
+          <button
+            onClick={handleSave}
+            disabled={isRunning || positions.length < 2}
+            className={`px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg transition-all duration-300 ${
+              isRunning || positions.length < 2
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            Sauvegarder
+          </button>
+        </div>
       </div>
     </div>
-  );
+  );  
 }
