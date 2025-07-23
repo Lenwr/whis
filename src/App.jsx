@@ -5,9 +5,14 @@ import EmomView from "./views/EmomView";
 import TabataView from "./views/TabataView";
 import { AuthProvider } from "./context/AuthContext";
 import { PrivateRoute, PublicRoute } from "./Guards/RouteGuards";
-import Layout from "./layout/DashbordLayout"; // <= Ton Layout avec Header/Footer/Outlet
+import Layout from "./layout/DashbordLayout";
 import LeaderboardView from "./views/LeaderBoardView";
 import RunSession from "./components/RunSession";
+import Profile from "./views/Profile";
+import CoachsList from "./views/CoachList";
+import CreateSession from "./components/CreateSession";
+import DashboardCoach from "./views/DashboardCoach";
+import AvailableSessions from "./components/AvailableSessions";
 
 export default function App() {
   return (
@@ -21,12 +26,17 @@ export default function App() {
 
           {/* Routes privées avec Layout */}
           <Route element={<PrivateRoute />}>
-            <Route element={<Layout />}> {/* Layout pour routes privées */}
+            <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/emom" element={<EmomView />} />
               <Route path="/tabata" element={<TabataView />} />
               <Route path="/leaderboard" element={<LeaderboardView />} />
               <Route path="/run" element={<RunSession />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/coachs" element={<CoachsList />} />
+              <Route path="/create-session" element={<CreateSession />} />
+              <Route path="/dashboard-coach" element={<DashboardCoach />} />
+              <Route path="/available-sessions" element={<AvailableSessions />} />
             </Route>
           </Route>
 
@@ -37,4 +47,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-

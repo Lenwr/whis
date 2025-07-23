@@ -40,6 +40,14 @@ export default function Layout() {
             >
               <li>
                 <button
+                  onClick={() => navigate("/profile")}
+                  className="w-full text-left"
+                >
+                  Profil
+                </button>
+              </li>
+              <li>
+                <button
                   onClick={() => navigate("/leaderboard")}
                   className="w-full text-left"
                 >
@@ -63,9 +71,9 @@ export default function Layout() {
 
       {/* FOOTER */}
       <footer className="footer text-center sm:footer-horizontal bg-cyan-700 text-neutral-content items-center p-4">
-    
-          <p>Copyright © {new Date().getFullYear()} - Tous droits réservés A.S.A </p>
-    
+        <p>
+          Copyright © {new Date().getFullYear()} - Tous droits réservés A.S.A{" "}
+        </p>
       </footer>
     </div>
   );

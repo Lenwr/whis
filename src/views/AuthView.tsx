@@ -9,6 +9,7 @@ export default function AuthView() {
   const navigate = useNavigate();
 
   const [isSignUp, setIsSignUp] = useState(true);
+  const [role, setRole] = useState<"Maitre" | "Eleve">("Eleve");
   const [displayName, setDisplayName] = useState("");
   const [anime, setAnime] = useState("");
   const [classe, setClasse] = useState("");
@@ -24,7 +25,10 @@ export default function AuthView() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard");
+      const timeout = setTimeout(() => {
+        navigate("/dashboard");
+      }, 500); // Petit délai pour Firestore
+      return () => clearTimeout(timeout);
     }
   }, [user, loading, navigate]);
 
@@ -33,19 +37,25 @@ export default function AuthView() {
     clearError();
     try {
       if (isSignUp) {
-        if (!anime) {
-          setLocalError("Choisissez d'abord un anime !");
+        if (!displayName) {
+          setLocalError("Choisis un nom de guerrier !");
           return;
         }
-        if (!classe) {
-          setLocalError("Choisissez une classe !");
-          return;
+        if (role === "Eleve") {
+          if (!anime) {
+            setLocalError("Choisis ton anime !");
+            return;
+          }
+          if (!classe) {
+            setLocalError("Choisis ta classe !");
+            return;
+          }
         }
-        await signUp(email, password, displayName, anime, classe);
+        await signUp(email, password, displayName, role, anime, classe);
       } else {
         await signIn(email, password);
       }
-    } catch (err) {
+    } catch {
       setLocalError("Erreur lors de l'authentification");
     }
   };
@@ -93,41 +103,59 @@ export default function AuthView() {
               }}
             />
 
+            {/* Rôle */}
             <select
-              className="w-full mb-4 p-3 rounded bg-white/20 text-white placeholder-white/70 focus:outline-none"
-              value={anime}
+              className="w-full mb-4 p-3 rounded bg-white/20 text-white focus:outline-none"
+              value={role}
               onChange={(e) => {
-                setAnime(e.target.value);
-                setClasse("");
+                setRole(e.target.value as "Maitre" | "Eleve");
                 clearError();
                 setLocalError("");
               }}
             >
-              <option value="">Choisis ton anime</option>
-              {Object.keys(animeClasses).map((animeName) => (
-                <option key={animeName} value={animeName}>
-                  {animeName}
-                </option>
-              ))}
+              <option value="Eleve">Eleve</option>
+              <option value="Maitre">Maitre</option>
             </select>
 
-            {anime && (
-              <select
-                className="w-full mb-4 p-3 rounded bg-white/20 text-white placeholder-white/70 focus:outline-none"
-                value={classe}
-                onChange={(e) => {
-                  setClasse(e.target.value);
-                  clearError();
-                  setLocalError("");
-                }}
-              >
-                <option value="">Choisis ta classe</option>
-                {animeClasses[anime].map((cls) => (
-                  <option key={cls} value={cls}>
-                    {cls}
-                  </option>
-                ))}
-              </select>
+            {role === "Eleve" && (
+              <>
+                <select
+                  className="w-full mb-4 p-3 rounded bg-white/20 text-white focus:outline-none"
+                  value={anime}
+                  onChange={(e) => {
+                    setAnime(e.target.value);
+                    setClasse("");
+                    clearError();
+                    setLocalError("");
+                  }}
+                >
+                  <option value="">Choisis ton anime</option>
+                  {Object.keys(animeClasses).map((animeName) => (
+                    <option key={animeName} value={animeName}>
+                      {animeName}
+                    </option>
+                  ))}
+                </select>
+
+                {anime && (
+                  <select
+                    className="w-full mb-4 p-3 rounded bg-white/20 text-white focus:outline-none"
+                    value={classe}
+                    onChange={(e) => {
+                      setClasse(e.target.value);
+                      clearError();
+                      setLocalError("");
+                    }}
+                  >
+                    <option value="">Choisis ta classe</option>
+                    {animeClasses[anime].map((cls) => (
+                      <option key={cls} value={cls}>
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </>
             )}
           </>
         )}
@@ -135,7 +163,7 @@ export default function AuthView() {
         <input
           type="email"
           placeholder="Email"
-          className="w-full mb-4 p-3 rounded bg-white/20 text-white placeholder-white/70 focus:outline-none"
+          className="w-full mb-4 p-3 rounded bg-white/20 text-white focus:outline-none"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -147,7 +175,7 @@ export default function AuthView() {
         <input
           type="password"
           placeholder="Mot de passe"
-          className="w-full mb-6 p-3 rounded bg-white/20 text-white placeholder-white/70 focus:outline-none"
+          className="w-full mb-6 p-3 rounded bg-white/20 text-white focus:outline-none"
           value={password}
           onChange={(e) => {
             setPassword(e.target.value);

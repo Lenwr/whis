@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import {
   User,
   onAuthStateChanged,
@@ -9,18 +15,28 @@ import {
   AuthError,
 } from "firebase/auth";
 import { auth, db } from "../firebase/config";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+export interface ExtendedUser extends User {
+  role: "Maitre" | "Etudiant";
+  anime?: string;
+  classe?: string;
+  xpTotal: number;
+  level: number;
+  createdAt: number;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: ExtendedUser | null;
   loading: boolean;
   error: string | null;
   signUp: (
     email: string,
     password: string,
     displayName: string,
-    anime: string,
-    classe: string
+    role: "Maitre" | "Etudiant",
+    anime?: string,
+    classe?: string
   ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
@@ -30,16 +46,41 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ExtendedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userDocRef = doc(db, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userDocRef);
+
+          if (userSnap.exists()) {
+            const firestoreData = userSnap.data();
+
+            const extendedUser = {
+              ...firebaseUser,
+              ...firestoreData,
+            } as ExtendedUser;
+
+            setUser(extendedUser);
+          } else {
+            setUser(firebaseUser as ExtendedUser);
+          }
+        } catch (err) {
+          console.error("Erreur lors du chargement Firestore :", err);
+          setUser(firebaseUser as ExtendedUser);
+        }
+      } else {
+        setUser(null);
+      }
+
       setLoading(false);
       setError(null);
     });
+
     return unsubscribe;
   }, []);
 
@@ -47,29 +88,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     displayName: string,
-    anime: string,
-    classe: string
+    role: "Maitre" | "Etudiant",
+    anime?: string,
+    classe?: string
   ) => {
     setError(null);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const newUser = userCredential.user;
 
-      await updateProfile(newUser, {
-        displayName: displayName,
-      });
+      await updateProfile(newUser, { displayName });
 
       await setDoc(doc(db, "users", newUser.uid), {
         uid: newUser.uid,
         displayName,
-        anime,
-        classe,
+        role,
+        anime: role === "Etudiant" ? anime : null,
+        classe: role === "Etudiant" ? classe : null,
         xpTotal: 0,
         level: 1,
         createdAt: Date.now(),
       });
 
-      setUser(newUser);
+      // Pas besoin de setUser ici, onAuthStateChanged se déclenche
     } catch (err) {
       const authErr = err as AuthError;
       setError(authErr.message);
@@ -92,7 +137,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       await signOut(auth);
-      setUser(null);
     } catch (err) {
       const authErr = err as AuthError;
       setError(authErr.message);
@@ -113,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within an AuthProvider");
+  if (!context)
+    throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

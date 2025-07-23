@@ -1,63 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase/config";
 import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase/config";
-
-interface UserData {
-  uid: string;
-  displayName: string;
-  anime?: string;
-  classe: string;
-  xpTotal: number;
-  level: number;
-  createdAt: number;
-}
+import { auth } from "../firebase/config";
+import CoachsPreview from "../components/CoachPreview";
+import { useCoachs } from "../components/useCoachs";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user?.uid) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchUserData = async () => {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          const data = userSnap.data() as UserData;
-          setUserData(data);
-        } else {
-          setUserData(null);
-        }
-      } catch (error) {
-        console.error("Erreur récupération données utilisateur :", error);
-        setUserData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, [user]);
+  const { coachs, loading: loadingCoachs } = useCoachs();
 
   if (loading) return <p className="text-center mt-10">Chargement...</p>;
+  if (!user) return <p className="text-center mt-10">Utilisateur non trouvé.</p>;
 
-  if (!userData) return <p className="text-center mt-10">Utilisateur non trouvé.</p>;
-
-  const { displayName, classe, xpTotal, level } = userData;
-
-  // Calcul dynamique du XP max selon le niveau
+  const { displayName, classe, xpTotal, level, role } = user;
   const xpMax = 100 + level * 50;
   const xpPercent = Math.min(100, (xpTotal / xpMax) * 100);
 
@@ -84,76 +41,87 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-blue-300 via-cyan-200 to-blue-500 overflow-hidden text-gray-900 font-sans">
-      {/* Salle du Temps background */}
-      <div
-        className="absolute inset-0 bg-center bg-no-repeat bg-cover opacity-70"
-        // tu peux ajouter un background-image ici si tu veux
-      />
+    <div className="relative min-h-screen py-6 flex flex-col items-center justify-center bg-gradient-to-b from-cyan-200 via-cyan-400 to-indigo-600 overflow-hidden text-gray-900 font-sans px-4">
+      <h1 className="text-3xl font-extrabold mb-4 text-cyan-900 drop-shadow-sm">
+        Bienvenue {displayName || "Guerrier"}
+      </h1>
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-transparent to-white/60" />
+      <p className="italic text-base text-cyan-900 text-center mb-8 max-w-xl">
+        Entraîne-toi pour gagner de l’XP et gravir les rangs de ta classe.
+      </p>
 
-      <div className="relative z-10 max-w-6xl mx-auto p-6 flex flex-col items-center space-y-8">
-        {/* Bienvenue */}
-        <div className="bg-cyan-100 bg-opacity-80 border border-cyan-300 rounded-xl items-center px-3 py-3 drop-shadow-md text-center max-w-md w-full flex flex-row justify-center ">
-          <h1 className=" text-xl font-semibold tracking-wide text-cyan-700 mr-2 drop-shadow-sm">
-            Bienvenue
-          </h1>
-          <p className=" text-2xl font-extrabold  text-cyan-800">
-            {displayName || "Guerrier"}
+      <div className="bg-white/40 backdrop-blur-md border border-cyan-300 rounded-2xl shadow-lg p-6 w-full max-w-3xl flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
+        <div className="text-center md:text-left">
+          <p className="text-lg font-semibold text-cyan-900">Classe</p>
+          <p className="text-2xl font-bold text-cyan-900">{classe}</p>
+        </div>
+        <div className="text-center md:text-left">
+          <p className="text-lg font-semibold text-cyan-900">Rang</p>
+          <p className="text-2xl font-bold text-cyan-900">{rank}</p>
+        </div>
+        <div className="w-full md:w-2/5">
+          <p className="text-lg font-semibold text-cyan-900 mb-2">XP</p>
+          <div className="w-full h-6 bg-cyan-100 rounded-full overflow-hidden border border-cyan-300 shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 transition-all duration-700 ease-out"
+              style={{ width: `${xpPercent}%` }}
+            />
+          </div>
+          <p className="text-sm mt-1 text-cyan-900 text-right font-medium">
+            {xpTotal} / {xpMax}
           </p>
         </div>
+      </div>
 
-        <p className="italic text-base text-cyan-900 max-w-xl text-center drop-shadow-sm">
-          Entraîne-toi pour gagner de l’XP et gravir les rangs dans ta classe.
-        </p>
-
-        {/* Stats */}
-        <div className="bg-white/40 backdrop-blur-md rounded-xl p-8 w-full max-w-3xl shadow-lg border border-cyan-300">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 text-cyan-900">
-            <div className="text-center md:text-left">
-              <p className="text-lg font-semibold">Classe actuelle</p>
-              <p className="text-2xl font-bold">{classe}</p>
-            </div>
-
-            <div className="text-center md:text-left">
-              <p className="text-lg font-semibold">Rang actuel</p>
-              <p className="text-2xl font-bold">{rank}</p>
-            </div>
-
-            <div className="w-full md:w-2/5">
-              <p className="text-lg font-semibold mb-2">XP</p>
-              <div className="w-full h-6 bg-cyan-100 rounded-full overflow-hidden shadow-inner border border-cyan-300">
-                <div
-                  className="h-6 bg-cyan-500 transition-all duration-700 ease-out"
-                  style={{ width: `${xpPercent}%` }}
-                />
-              </div>
-              <p className="text-sm mt-1 text-cyan-700 text-right font-medium">
-                {xpTotal} / {xpMax}
-              </p>
-            </div>
-          </div>
+      {/* ✅ Les élèves voient la liste des coachs */}
+      {role !== "Maitre" && (
+        <div className="w-full max-w-3xl mb-8">
+          {loadingCoachs ? (
+            <p>Chargement coachs...</p>
+          ) : (
+            <CoachsPreview coachs={coachs} />
+          )}
         </div>
+      )}
 
-        {/* Menu */}
-        <div className="bg-white/50 backdrop-blur-md rounded-xl p-6 max-w-3xl w-full flex flex-col md:flex-row md:justify-center md:space-x-6 space-y-4 md:space-y-0 shadow-md border border-cyan-300">
+      {/* ✅ Boutons d'entraînement seulement pour les élèves */}
+      {role !== "Maitre" && (
+        <div className="bg-white/40 backdrop-blur-md border border-cyan-300 rounded-2xl shadow-lg p-6 w-full max-w-3xl flex flex-col md:flex-row md:justify-center md:space-x-6 space-y-4 md:space-y-0 mb-8">
           {[
             { label: "EMOM", icon: "⏳", path: "/emom" },
             { label: "Tabata", icon: "🔥", path: "/tabata" },
-            { label: "Run", icon: "🏃🏾‍♂️‍➡️", path: "/run" },
+            { label: "Run", icon: "🏃🏾‍♂️", path: "/run" },
+            { label: "Sessions", icon: "🧑🏾‍💻", path: "/available-sessions" },
           ].map(({ label, icon, path }) => (
             <button
               key={label}
-              className="flex items-center justify-center bg-cyan-700 hover:bg-cyan-600 rounded-lg py-4 text-white font-semibold text-lg transition"
               onClick={() => navigate(path)}
+              className="flex items-center justify-center px-6 py-4 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold text-lg shadow-md transition"
             >
               <span className="text-3xl mr-3">{icon}</span> {label}
             </button>
           ))}
         </div>
-      </div>
+      )}
+
+      {/* ✅ Coachs uniquement */}
+      {role === "Maitre" && (
+        <>
+          <button
+            onClick={() => navigate("/create-session")}
+            className="mt-4 px-6 py-4 bg-indigo-700 text-white rounded-xl font-bold shadow hover:bg-indigo-800 transition"
+          >
+            🎥 Créer une session live
+          </button>
+
+          <button
+            onClick={() => navigate("/dashboard-coach")}
+            className="mt-4 px-6 py-4 bg-cyan-800 text-white rounded-xl font-bold shadow hover:bg-cyan-900 transition"
+          >
+            📅 Voir mes sessions (Coach)
+          </button>
+        </>
+      )}
     </div>
   );
 }
